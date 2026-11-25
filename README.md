@@ -2,7 +2,9 @@
 
 ## Objective
 
-The objective of this assignment is to understand application containerization using Docker, deploy a Flask application inside a container and automate the Docker image build process using GitHub Actions.
+The objective of this assignment is to understand application containerization using Docker, run a Flask application inside a container and automate the Docker image build process using GitHub Actions.
+
+The primary focus is on understanding containers, dependency management, application verification and automated build checks rather than application development.
 
 ## Tools and Technologies
 
@@ -23,12 +25,33 @@ devops-assignment-2/
 │   └── workflows/
 │       └── build.yml
 ├── screenshots/
+│   ├── ci-build-steps.png
+│   ├── ci-success.png
+│   ├── container-health-check.png
+│   ├── container-running.png
 │   ├── docker-build.png
-│   └── container-health-check.png
+│   ├── docker-image.png
+│   ├── home-endpoint.png
+│   └── info-endpoint.png
 ├── app.py
-├── requirements.txt
 ├── Dockerfile
-└── README.md
+├── README.md
+└── requirements.txt
+```
+
+## Getting Started
+
+### Prerequisites
+
+- Git
+- Docker installed and running
+- Terminal with access to Docker commands
+
+### Clone the Repository
+
+```bash
+git clone https://github.com/Rukmini2309/DevOps_Assignment_2.git
+cd DevOps_Assignment_2
 ```
 
 ## 1. Flask Application
@@ -43,9 +66,19 @@ The application exposes the following endpoints:
 | `/health` | Checks whether the application is running |
 | `/info` | Displays application and runtime environment information |
 
+### Application Dependencies
+
+The `requirements.txt` file contains the dependency required to run the application.
+
+```text
+flask
+```
+
+Docker installs this dependency while building the image, eliminating the need to manually install Flask on the host system.
+
 ### Additional Feature - Application Information Endpoint
 
-I added an additional `/info` endpoint to understand the environment in which the containerized application executes.
+I added an optional `/info` endpoint to understand the environment in which the containerized application executes.
 
 This endpoint provides:
 
@@ -60,6 +93,25 @@ The Python `socket` and `platform` modules are used to retrieve runtime environm
 ## 2. Docker Configuration
 
 A Dockerfile was created to package the Flask application along with its dependencies into a Docker image.
+
+### Understanding Docker Images and Containers
+
+A Docker image is a packaged template containing the application, its dependencies and the required runtime environment.
+
+A Docker container is a running instance of a Docker image that executes the application in an isolated environment.
+
+```text
+Application + Dependencies + Dockerfile
+                  |
+                  v
+             Docker Image
+                  |
+                  v
+            Docker Container
+                  |
+                  v
+           Running Application
+```
 
 ### Dockerfile
 
@@ -93,31 +145,46 @@ CMD ["python", "app.py"]
 | EXPOSE | Documents the application port |
 | CMD | Specifies the command to start the application |
 
+### Dockerfile Design Decisions
+
 The lightweight Python slim image was selected to avoid including unnecessary packages.
 
 The requirements file is copied before the application code to allow Docker to reuse the dependency installation layer when application code changes.
 
+The `--no-cache-dir` option prevents pip from storing unnecessary package download cache inside the image.
+
 ## 3. Building and Running the Application
 
-### Build the Docker Image
+### Step 1: Build the Docker Image
 
 ```bash
 docker build -t devops-demo:v1 .
 ```
 
-The image is named `devops-demo` and tagged with version `v1`.
+| Option | Purpose |
+|---|---|
+| docker build | Builds an image using the Dockerfile |
+| -t | Assigns a name and tag to the image |
+| devops-demo:v1 | Image name and version tag |
+| . | Uses the current directory as the build context |
 
-### Verify the Docker Image
+### Docker Build Output
+
+<img src="screenshots/docker-build.png" alt="Successful Docker Image Build" width="100%">
+
+### Step 2: Verify the Docker Image
 
 ```bash
 docker images
 ```
 
-### Docker Build Output
+This command lists the locally available Docker images, including the newly created `devops-demo:v1` image.
 
-![Docker Image Build](screenshots/docker-build.png)
+### Docker Image Verification Output
 
-### Run the Docker Container
+<img src="screenshots/docker-image.png" alt="Docker Image Verification" width="100%">
+
+### Step 3: Run the Docker Container
 
 ```bash
 docker run -d -p 127.0.0.1:5000:5000 --name devops-demo-container devops-demo:v1
@@ -125,22 +192,45 @@ docker run -d -p 127.0.0.1:5000:5000 --name devops-demo-container devops-demo:v1
 
 | Option | Purpose |
 |---|---|
+| docker run | Creates and starts a container from an image |
 | -d | Runs the container in the background |
 | -p | Maps the host port to the container port |
 | --name | Assigns a meaningful name to the container |
 | devops-demo:v1 | Specifies the image used to create the container |
 
+### Understanding Port Mapping
+
+The Flask application runs on port 5000 inside the container.
+
+The port mapping makes the application accessible through port 5000 on the host system.
+
+```text
+Host System
+127.0.0.1:5000
+       |
+       | Port Mapping
+       v
+Docker Container
+Flask Application:5000
+```
+
 The application port is published on the host's localhost interface for local testing.
 
-### Verify the Running Container
+### Step 4: Verify the Running Container
 
 ```bash
 docker ps
 ```
 
+This command displays the currently running containers, including their container ID, image, status, port mapping and container name.
+
+### Running Container Output
+
+<img src="screenshots/container-running.png" alt="Running Docker Container" width="100%">
+
 ## 4. Application Testing
 
-The application endpoints were tested using the curl command.
+The application endpoints were tested using the curl command to verify that the containerized application was accessible from the host system.
 
 ### Home Endpoint
 
@@ -148,11 +238,17 @@ The application endpoints were tested using the curl command.
 curl localhost:5000/
 ```
 
-Output:
+Expected output:
 
 ```text
 Hello from DevOps!
 ```
+
+### Home Endpoint Execution Output
+
+<img src="screenshots/home-endpoint.png" alt="Flask Home Endpoint Output" width="100%">
+
+The response confirms that the application is running and accepting requests.
 
 ### Health Check Endpoint
 
@@ -160,13 +256,19 @@ Hello from DevOps!
 curl localhost:5000/health
 ```
 
-Output:
+Expected output:
 
 ```json
 {"status":"ok"}
 ```
 
+### Health Check Execution Output
+
+<img src="screenshots/container-health-check.png" alt="Successful Application Health Check" width="100%">
+
 The successful response confirms that the application is accessible through the published Docker container port.
+
+The health endpoint provides a simple mechanism for checking application availability.
 
 ### Application Information Endpoint
 
@@ -176,17 +278,31 @@ curl localhost:5000/info
 
 This endpoint returns application metadata, container hostname, operating system and Python version in JSON format.
 
+### Application Information Output
+
+<img src="screenshots/info-endpoint.png" alt="Container Runtime Information" width="100%">
+
+The output demonstrates that the application is executing in a Linux-based container environment with its own hostname and Python runtime.
+
 The hostname may differ when a new container is created.
 
-### Container and Endpoint Verification Output
+### Application Testing Summary
 
-![Running Container and Health Check](screenshots/container-health-check.png)
+| Endpoint | Verification | Result |
+|---|---|---|
+| `/` | Welcome message | Passed |
+| `/health` | Application availability | Passed |
+| `/info` | Runtime environment information | Passed |
 
 ## 5. Continuous Integration Using GitHub Actions
 
+Continuous Integration (CI) is a development practice in which automated checks are executed whenever changes are integrated into a repository.
+
 A GitHub Actions workflow was created to automatically build the Docker image whenever changes are pushed to the repository.
 
-The workflow is located at:
+This eliminates the need to manually verify the Docker build after every change.
+
+### Workflow Location
 
 ```text
 .github/workflows/build.yml
@@ -217,22 +333,117 @@ jobs:
         run: echo "Application image built successfully!"
 ```
 
+### Workflow Components
+
+| Component | Purpose |
+|---|---|
+| name | Defines the workflow name |
+| on: [push] | Triggers the workflow whenever changes are pushed |
+| jobs | Defines the tasks performed by the workflow |
+| docker-build | Name of the build job |
+| runs-on | Specifies the runner environment |
+| steps | Defines individual operations |
+| actions/checkout@v4 | Retrieves the repository source code |
+| run | Executes a shell command on the runner |
+
 ### Workflow Execution Process
 
-1. A change is pushed to the GitHub repository.
-2. GitHub Actions starts an Ubuntu runner.
-3. The application source code is retrieved.
-4. The Docker image is built.
-5. The generated Docker image is listed for verification.
-6. A completion message is displayed if the previous steps succeed.
-
-This workflow helps identify Docker build errors automatically without requiring manual builds after every code change.
-
-Pushing the Docker image to an external container registry is not required for this assignment.
+```text
+Developer pushes changes to GitHub
+                |
+                v
+GitHub Actions triggers the workflow
+                |
+                v
+Ubuntu runner is initialized
+                |
+                v
+Application source code is retrieved
+                |
+                v
+Docker image is built
+                |
+                v
+Generated image is listed
+                |
+                v
+Build status is reported
+```
 
 ### CI Workflow Verification
 
-The workflow will be verified through the GitHub Actions tab after pushing the project to GitHub.
+After pushing the project to GitHub, the CI workflow was automatically triggered and completed successfully.
+
+### Build Results
+
+| Parameter | Result |
+|---|---|
+| Workflow Name | DevOps Docker Build Check |
+| Workflow Run | #1 |
+| Trigger | Git Push |
+| Branch | main |
+| Build Status | Passed |
+| Total Workflow Duration | 26 seconds |
+| Docker Build Job Duration | 21 seconds |
+
+### Successful CI Workflow Execution
+
+<img src="screenshots/ci-success.png" alt="Successful GitHub Actions Workflow" width="100%">
+
+The workflow summary confirms that the push event automatically triggered the CI pipeline and that the Docker build job completed successfully.
+
+### Individual CI Build Steps
+
+<img src="screenshots/ci-build-steps.png" alt="Successful Individual CI Build Steps" width="100%">
+
+### Step-wise Verification
+
+| Workflow Step | Status |
+|---|---|
+| Set up job | Passed |
+| Get application source code | Passed |
+| Build application Docker image | Passed |
+| Verify generated Docker image | Passed |
+| Display build completion message | Passed |
+| Complete job | Passed |
+
+All configured workflow steps completed successfully.
+
+The workflow also reported one warning, which did not prevent successful completion.
+
+### How CI Detects Build Failures
+
+GitHub Actions monitors the exit status of the commands executed during the workflow.
+
+- An exit status of zero indicates successful execution.
+- A non-zero exit status indicates command failure.
+- If the Docker build command fails, the workflow is marked as failed.
+- Subsequent steps are skipped by default when an earlier step fails.
+- Developers can inspect the workflow logs to identify the cause of the failure.
+
+```text
+        Docker Build
+              |
+              v
+     Command Successful?
+         /          \
+       Yes           No
+        |             |
+        v             v
+   Build Passed   Build Failed
+```
+
+### Benefits of Automated Build Checks
+
+- Automatically verifies Docker image creation after every push.
+- Identifies dependency installation and Dockerfile errors.
+- Provides immediate feedback about build success or failure.
+- Reduces repetitive manual build verification.
+- Verifies the build in a separate runner environment.
+
+The CI workflow verifies Docker image creation, while application runtime and health checks are performed separately using curl.
+
+Pushing the Docker image to an external container registry is not required for this assignment.
 
 ## 6. Problems Encountered During Implementation
 
@@ -254,6 +465,12 @@ sudo usermod -aG docker $USER
 newgrp docker
 ```
 
+| Command | Purpose |
+|---|---|
+| groupadd -f docker | Ensures that the Docker group exists |
+| usermod -aG docker $USER | Adds the current user to the Docker group |
+| newgrp docker | Activates the updated group membership in a new shell |
+
 The Docker connection was verified using:
 
 ```bash
@@ -266,6 +483,8 @@ After updating the user permissions, Docker commands executed successfully.
 
 Initially, the Dockerfile was created using a lowercase filename.
 
+Docker expects a file named `Dockerfile` by default when executing the build command.
+
 The file was renamed to `Dockerfile` to follow Docker's default naming convention.
 
 ## 7. Bug Identification and Fixes
@@ -274,6 +493,8 @@ The assignment mentions a teammate's application that cannot be accessed. Howeve
 
 Therefore, I identified common configuration problems that could prevent a Dockerized Flask application from running or being accessed.
 
+### Common Problems and Solutions
+
 | Problem | Reason | Fix |
 |---|---|---|
 | Flask binds to 127.0.0.1 inside the container | The application only accepts connections through the container's loopback interface | Configure Flask to bind to 0.0.0.0 |
@@ -281,9 +502,38 @@ Therefore, I identified common configuration problems that could prevent a Docke
 | Missing Flask dependency | The application cannot import Flask | Install dependencies using requirements.txt |
 | Incorrect startup command | Docker attempts to execute an incorrect application file | Use `CMD ["python", "app.py"]` |
 
+### Correct Flask Configuration
+
+```python
+app.run(host="0.0.0.0", port=5000)
+```
+
+Binding Flask to `0.0.0.0` allows it to accept connections through the container's network interfaces.
+
+### Correct Port Mapping
+
+```bash
+docker run -d -p 127.0.0.1:5000:5000 --name devops-demo-container devops-demo:v1
+```
+
+### Correct Dependency Installation
+
+```dockerfile
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+```
+
+### Correct Application Startup Command
+
+```dockerfile
+CMD ["python", "app.py"]
+```
+
 These are illustrative configuration problems and their corresponding fixes, rather than bugs identified in the missing code snippet.
 
 ## 8. Container Management
+
+The following Docker commands can be used to manage the application container.
 
 ### Stop the Container
 
@@ -291,11 +541,15 @@ These are illustrative configuration problems and their corresponding fixes, rat
 docker stop devops-demo-container
 ```
 
+Stops the running container without deleting it.
+
 ### Start a Stopped Container
 
 ```bash
 docker start devops-demo-container
 ```
+
+Restarts an existing stopped container.
 
 ### View Container Logs
 
@@ -303,27 +557,63 @@ docker start devops-demo-container
 docker logs devops-demo-container
 ```
 
+Displays application logs and helps identify runtime errors.
+
+### List All Containers
+
+```bash
+docker ps -a
+```
+
+Displays both running and stopped containers.
+
 ### Remove the Container
 
 ```bash
 docker rm -f devops-demo-container
 ```
 
-## 9. Key Learnings
+Stops and removes the container. The Docker image remains available for creating new containers.
+
+## 9. Assignment Verification
+
+| Requirement | Status |
+|---|---|
+| Use the provided Flask application | Completed |
+| Create requirements.txt | Completed |
+| Create a Dockerfile | Completed |
+| Build the Docker image | Completed |
+| Run the Docker container | Completed |
+| Verify the health endpoint using curl | Completed |
+| Create GitHub Actions workflow | Completed |
+| Automatically build the image on push | Completed |
+| Verify successful CI execution | Completed |
+| Document commands and execution outputs | Completed |
+| Identify and explain common configuration bugs | Documented with illustrative examples |
+
+## 10. Key Learnings
 
 Through this assignment, I learned:
 
 - The difference between Docker images and containers.
+- How containers provide isolated application environments.
 - How to write and understand a Dockerfile.
 - How to package an application with its dependencies.
+- How Docker image layers and build caching work.
 - How to build and run Docker containers.
 - How port mapping works.
 - How to test application endpoints using curl.
 - How to retrieve container runtime information.
 - How to troubleshoot Docker permission issues.
+- How to manage running and stopped containers.
 - How to configure GitHub Actions for continuous integration.
+- How CI automatically detects build success and failure.
 - How automated builds help identify configuration errors.
 
 ## Conclusion
 
-This assignment provided hands-on experience with Docker containerization and continuous integration. It helped me understand how applications can be packaged into consistent execution environments and how GitHub Actions can automate the build verification process whenever code changes are pushed to a repository.
+This assignment provided hands-on experience with Docker containerization and continuous integration.
+
+It helped me understand how applications can be packaged with their dependencies and executed in consistent, isolated environments.
+
+The successful execution of the GitHub Actions workflow demonstrated how CI can automate Docker build verification whenever changes are pushed to a repository, reducing manual effort and providing feedback about build errors.
