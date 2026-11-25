@@ -1,0 +1,20 @@
+name: DevOps Docker Build Check
+
+on: [push]
+
+jobs:
+  docker-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Get application source code
+        uses: actions/checkout@v4
+
+      - name: Build application Docker image
+        run: docker build -t devops-demo:v1 .
+
+      - name: Verify generated Docker image
+        run: docker images devops-demo:v1
+
+      - name: Display build completion message
+        run: echo "Application image built successfully!"
