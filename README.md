@@ -264,7 +264,7 @@ Expected output:
 
 ### Health Check Execution Output
 
-<img src="screenshots/container-health-check.png" alt="Successful Application Health Check" width="100%">
+<img src="screenshots/container-health-check_.png" alt="Successful Application Health Check" width="100%">
 
 The successful response confirms that the application is accessible through the published Docker container port.
 
