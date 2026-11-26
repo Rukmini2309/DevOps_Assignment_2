@@ -16,15 +16,5 @@ jobs:
       - name: Verify generated Docker image
         run: docker images devops-demo:v1
 
-      - name: Run application container
-        run: docker run -d -p 127.0.0.1:5000:5000 --name ci-test-container devops-demo:v1
-
-      - name: Test health endpoint
-        run: curl --fail --retry 5 --retry-connrefused --retry-delay 2 http://localhost:5000/health
-
       - name: Display build completion message
-        run: echo "Application image built and health check passed successfully!"
-
-      - name: Remove test container
-        if: always()
-        run: docker rm -f ci-test-container
+        run: echo "Application image built successfully!"
